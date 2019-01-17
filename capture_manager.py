@@ -3,6 +3,7 @@ import numpy as np
 from PIL import Image
 from yolo import YOLO
 from timeit import default_timer as timer
+import subprocess
 
 
 class VideoCaptureManager():
@@ -37,11 +38,12 @@ class VideoCaptureRecognizer(cv2.VideoCapture):
         curr_fps = 0
         fps = "FPS: ??"
         prev_time = timer()
+        counter = 0
         while(True):
             ret, frame = self.read() 
             if ret:
                 image = Image.fromarray(frame, 'RGB')
-                image = self.yolo.detect_image(image)
+                image, classes = self.yolo.detect_image(image)
                 img_array = np.array(image)
                 cv2.imshow('frame', img_array)  
                 
@@ -53,6 +55,11 @@ class VideoCaptureRecognizer(cv2.VideoCapture):
                 if accum_time > 1:
                     accum_time = accum_time - 1
                     fps = "FPS: " + str(curr_fps)
+                    counter += 1
+                    if counter == 5:
+                        counter = 0
+                        text_to_speak = ", ".join(classes)
+                        subprocess.Popen('echo "{}" | festival --tts'.format(text_to_speak), shell=True)
                     curr_fps = 0
                 print(fps)
     
